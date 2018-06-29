@@ -158,30 +158,16 @@ class StartDuplic:
             self.iface.messageBar().pushMessage("Erro", u"Provedor da camada corrente não provem do banco de dados!", level=QgsMessageBar.CRITICAL, duration=4)
             return
         
-        # def getDimension(self, geom):
-        # sql = "select ST_Dimension('%s')" % geom
-        # return sql
-    
-        # def getMulti(self,cl):
-        #     #TODO: get pk
-        cl = '"'+'"."'.join(cl.replace('"','').split('.'))+'"'
-        #     sql = """select id from only {0} where ST_NumGeometries(geom) > 1""".format(cl)
-        #     return sql
-
-        # def getDuplicatedGeom(self, schema, cl, geometryColumn, keyColumn):
-        #     sql = """select * from (
-        #     SELECT "{3}",
-        #     ROW_NUMBER() OVER(PARTITION BY "{2}" ORDER BY "{3}" asc) AS Row,
-        #     geom FROM ONLY "{0}"."{1}" 
-        #     ) dups
-        #     where     
-        #     dups.Row > 1""".format(schema, cl, geometryColumn, keyColumn)
-        #     return sql
-        
         # Busca através do SQL 
         sql = '''select * from (
-        SELECT "{3}",ROW_NUMBER() OVER(PARTITION BY "{2}" ORDER BY "{3}" asc) AS Row,geom FROM ONLY "{0}"."{1}" ) dups where dups.Row > 1 and {3} in ({4})'''.format(self.tableSchema, self.cl, self.geometryColumn, self.keyColumn, ",".join(lista_fid))
-        query = QSqlQuery(sql)                                                                                                                                          # {0}             {1}            {2}               {3}                {4}                                                                                                
+        SELECT "{3}",
+        ROW_NUMBER() OVER(PARTITION BY "{2}" ORDER BY "{3}" asc) AS Row,
+        geom FROM ONLY "{0}"."{1}" 
+        ) dups 
+        where dups.Row > 1'''.format(self.tableSchema, self.tableName, self.geometryColumn, self.keyColumn, ",".join(lista_fid))
+        
+        
+        query = QSqlQuery(sql)                                                                                                                                          #     {0}        {1}            {2}                {3}                {4}                                                                                                
         
         self.flagsLayer.startEditing()
         flagCount = 0 # iniciando contador que será referência para os IDs da camada de memória.
@@ -190,6 +176,9 @@ class StartDuplic:
         while query.next():
             motivo = query.value(0)
             local = query.value(1)
+
+            print motivo
+            print local
             flagId = flagCount
 
             flagFeat = QgsFeature()
@@ -201,7 +190,7 @@ class StartDuplic:
 
             listaFeatures.append(flagFeat)    
 
-            flagCount += 1 # incrementando o contador a cada iteração
+            flagCount += 1 # incrementando o contador a cada iteração.
 
         self.flagsLayerProvider.addFeatures(listaFeatures)
         self.flagsLayer.commitChanges() # Aplica as alterações à camada.
