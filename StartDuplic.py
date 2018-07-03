@@ -130,7 +130,7 @@ class StartDuplic:
 
             self.flagsLayer = QgsVectorLayer(tempString, flagsLayerName, "memory")
             self.flagsLayerProvider = self.flagsLayer.dataProvider()
-            self.flagsLayerProvider.addAttributes([QgsField("id", QVariant.Int), QgsField("motivo", QVariant.String)])
+            self.flagsLayerProvider.addAttributes([QgsField("flagId", QVariant.Int), QgsField("duplicId", QVariant.String)])
             self.flagsLayer.updateFields()
 
         self.flagsLayer.startEditing()
@@ -162,7 +162,8 @@ class StartDuplic:
         sql = '''select * from (
         SELECT "{3}",
         ROW_NUMBER() OVER(PARTITION BY "{2}" ORDER BY "{3}" asc) AS Row,
-        geom FROM ONLY "{0}"."{1}" 
+        ST_AsText(geom) FROM ONLY "{0}"."{1}" 
+        where {3} in ({4})
         ) dups 
         where dups.Row > 1'''.format(self.tableSchema, self.tableName, self.geometryColumn, self.keyColumn, ",".join(lista_fid))
         
@@ -174,11 +175,12 @@ class StartDuplic:
 
         listaFeatures = []
         while query.next():
-            motivo = query.value(0)
-            local = query.value(1)
+            id = query.value(0)
+            ord = query.value(1)
+            local = query.value(2)
 
-            print motivo
-            print local
+            print id, ord, local
+
             flagId = flagCount
 
             flagFeat = QgsFeature()
@@ -186,7 +188,7 @@ class StartDuplic:
             flagFeat.setGeometry(flagGeom)
             flagFeat.initAttributes(2)
             flagFeat.setAttribute(0,flagId) # insere o id definido para a coluna 0 da layer de memória.
-            flagFeat.setAttribute(1, motivo) # insere o motivo/razão pré-definida para a coluna 1 da layer de memória.
+            flagFeat.setAttribute(1,id) # insere o motivo/razão pré-definida para a coluna 1 da layer de memória.
 
             listaFeatures.append(flagFeat)    
 
